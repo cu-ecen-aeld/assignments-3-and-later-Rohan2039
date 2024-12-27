@@ -7,10 +7,10 @@ searchstring=$2
 
 if [$filesdir ==No_dir] || [$searchstring ==No_Str]
 then
-  cat 1
+  echo 1
 elif[-d filesdir]
 then
-  cat 1
+  echo 1
 else
   X=$(ls -c)
   Y=$(grep -c searchstring *)
