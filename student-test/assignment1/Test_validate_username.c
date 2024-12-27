@@ -18,13 +18,9 @@ void test_validate_my_username()
      * TODO: Replace the line below with your code here as described above to verify your /conf/username.txt 
      * config file and my_username() functions are setup properly
      */
+    char *return_val, *return_conf;
+    return_val = my_username();
+    return_conf = malloc_username_from_conf_file();
+    TEST_ASSERT_EQUAL_STRING_MESSAGE(return_val, return_conf,"Failed!! need to fix it");
     
-    if(TEST_ASSERT_EQUAL_STRING (malloc_username_from_conf_file(), my_username()))
-    {
-        TEST_ASSERT_TRUE_MESSAGE(TRUE,"Unit test worked");
-    }
-    else
-    {
-        TEST_ASSERT_TRUE_MESSAGE(false,"student need to fix it");
-    }
 }
