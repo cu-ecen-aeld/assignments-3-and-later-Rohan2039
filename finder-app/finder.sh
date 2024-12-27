@@ -8,7 +8,7 @@ searchstring=$2
 if [$filesdir ==No_dir] || [$searchstring ==No_Str]
 then
   echo 1
-elif[-d filesdir]
+elif [-d filesdir]
 then
   echo 1
 else
