@@ -1,20 +1,22 @@
 
 #!/bin/bash
 
-filesdir=No_dir
-searchstring=No_Str
+filesdir="No_dir"
+searchstring="No_Str"
 filesdir=$1
 searchstring=$2
 
-if [$filesdir ==No_dir] || [$searchstring ==No_Str]
+if [ $filesdir ==No_dir ] || [ $searchstring ==No_Str ]
 then
-  echo 1
-elif [-d $filesdir]
+  echo "No dir or No string"
+  exit 1
+elif [ -d $filesdir ]
 then
-  echo 1
+  echo "No file directory"
+  exit 1
 else
-  X=$(ls -c)
-  Y=$(grep -c searchstring *)
+  X=$(find "$filesdir" -type f | wc -l)
+  Y=$(grep -c $searchstring *)
  printMsg="The number of files are $X and the number of matching lines are $Y"
  echo $printMsg
 fi
