@@ -6,11 +6,11 @@ searchstring="No_Str"
 filesdir=$1
 searchstring=$2
 
-if [ $filesdir ==No_dir ] || [ $searchstring ==No_Str ]
+if [[ $filesdir == "No_dir" ] || [ $searchstring == "No_Str" ]]
 then
   echo "No dir or No string"
   exit 1
-elif [ -d $filesdir ]
+elif [ ! -d $filesdir ]
 then
   echo "No file directory"
   exit 1
