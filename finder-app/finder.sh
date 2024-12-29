@@ -6,6 +6,8 @@ searchstring="No_Str"
 filesdir=$1
 searchstring=$2
 
+echo $filesdir
+echo $searchstring
 if [[ $filesdir == "No_dir"  ||  $searchstring == "No_Str" ]]
 then
   echo "No dir or No string"
