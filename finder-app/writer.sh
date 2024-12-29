@@ -10,7 +10,7 @@ then
 else
   if [[ ! -d $writefile ]]
   then
-    mkdir $(dirname "$writefile")
+    mkdir -p $(dirname "$writefile")
   fi
   echo "$writestr" > "$writefile"
   if [ $? == 1 ]
