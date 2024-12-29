@@ -3,7 +3,7 @@
 writefile=$1
 writestr=$2
 
-if [[ "$writefile" == "" || "$writestr" == ""]]
+if [[ "$writefile" == "" || "$writestr" == "" ]]
 then
   echo "No dir and No Str"
   exit 1
