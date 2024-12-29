@@ -6,11 +6,11 @@ searchstring=$2
 
 if [[ "$filesdir" == ""  ||  "$searchstring" == "" ]]
 then
-  echo "No dir or No string"
+  echo "ERROR : either dir or serchstring is not provided!! Please provide inputs properly"
   exit 1
 elif [ ! -d $filesdir ]
 then
-  echo "No file directory"
+  echo " ERROR : No such file directory"
   exit 1
 else
   X=$(find "$filesdir" -type f | wc -l)
