@@ -5,7 +5,7 @@ writestr=$2
 
 if [[ "$writefile" == "" || "$writestr" == "" ]]
 then
-  echo "No dir and No Str"
+  echo "ERROR : either dir or serchstring is not provided!! Please provide inputs properly"
   exit 1
 else
   if [[ ! -d $writefile ]]
@@ -15,7 +15,7 @@ else
   echo "$writestr" > "$writefile"
   if [ $? == 1 ]
   then
-    echo "file could not creted"
+    echo "ERROR :file could not creted"
     exit 1
   fi
 fi
