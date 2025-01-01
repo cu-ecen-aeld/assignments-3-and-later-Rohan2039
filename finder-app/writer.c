@@ -35,5 +35,7 @@ int writer(char *writefile, char *writestr){
 }
 
 int main(int argc, char *argv[]){
-    writer(argv[1],argv[2]);
+    
+    return writer(argv[1],argv[2]);
+    
 }
