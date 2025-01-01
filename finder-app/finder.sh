@@ -4,6 +4,9 @@
 filesdir=$1
 searchstring=$2
 
+echo $filesdir
+echo $searchstring
+
 if [[ "$filesdir" == ""  ||  "$searchstring" == "" ]]
 then
   echo "ERROR : either dir or serchstring is not provided!! Please provide inputs properly"
