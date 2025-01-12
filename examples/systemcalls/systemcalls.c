@@ -16,6 +16,12 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
+    int ret_Val = -1;
+    ret_Val = system(cmd);
+
+    if(ret_Val==-1){
+        return false;
+    }
 
     return true;
 }
@@ -43,12 +49,14 @@ bool do_exec(int count, ...)
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
+       
     }
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+    
 
+    
 /*
  * TODO:
  *   Execute a system command by calling fork, execv(),
@@ -58,10 +66,28 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
-
+    int pid,status;
+    bool ret_Val = false;
+    pid = fork();
+   if(pid==0){
+        //child Process
+        execv(command[0],command);
+        perror("exec operation terminated\n");
+        
+        exit(EXIT_FAILURE);
+    } 
+    else{
+        //Parent Process
+      
+        wait(&status);
+       
+        if ((WIFEXITED(status))&& (WEXITSTATUS(status)==0)) {
+            ret_Val = true;
+        }
+    }
     va_end(args);
-
-    return true;
+   
+    return ret_Val;
 }
 
 /**
@@ -78,6 +104,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
+        
     }
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
@@ -91,9 +118,34 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   redirect standard out to a file specified by outputfile.
  *   The rest of the behaviour is same as do_exec()
  *
-*/
+*/  int ret_Val=false,status;
+    
+    int file = open(outputfile,O_RDWR | O_CREAT | O_TRUNC, 0644);
+    if (file == -1) {
+        perror("Error opening file");
+        return false;
+    }
+    
+    ret_Val = dup2(file,STDOUT_FILENO);
+    if(ret_Val == -1){
+        perror("wrong inputs\n");
+        return false;
+    }
 
+    int pid = fork();
+    if(pid==0){
+        execv(command[0],command);
+        perror("exec operation terminated\n");
+        exit(EXIT_FAILURE);
+    } 
+    else{
+        wait(&status);
+        if ((WIFEXITED(status))&& (WEXITSTATUS(status)==0)) {
+            ret_Val = true;
+        }
+    }
+    
     va_end(args);
 
-    return true;
+    return ret_Val;
 }
