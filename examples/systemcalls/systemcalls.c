@@ -144,7 +144,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
             ret_Val = true;
         }
     }
-    
+    close(file);
     va_end(args);
 
     return ret_Val;
