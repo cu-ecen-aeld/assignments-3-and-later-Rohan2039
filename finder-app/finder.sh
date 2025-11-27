@@ -1,5 +1,6 @@
-
-#!/bin/bash
+#!/bin/sh
+# Tester script for assignment 1 and assignment 2
+# Author: Siddhant Jajoo
 
 filesdir=$1
 searchstring=$2
@@ -21,12 +22,3 @@ else
  printMsg="The number of files are $X and the number of matching lines are $Y"
  echo $printMsg
 fi
-
-
-
-
-
-
-
-
-  
