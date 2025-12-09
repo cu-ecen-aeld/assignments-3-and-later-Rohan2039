@@ -1,8 +1,10 @@
 
-CC :=$(CROSS_CPMPILE)gcc
-default:writer.c
-	$(CC) -c writer.c -o writer.o
-	$(CC) writer.o -o writer
+CC :=aarch64-none-linux-gnu-gcc
+all:writer
+
+writer:writer.o
+
+writer.o:writer.c
 
 clean:
 	rm -f writer *.o
