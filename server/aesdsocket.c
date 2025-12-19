@@ -1,10 +1,18 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <syslog.h>
+#include <string.h>
+#include <stdio.h>
+#include <netdb.h> 
+#include <stdlib.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #define PORT "9000"
 #define MAXDATASIZE 100
-int listenfd,fd;
+int listenfd;
+FILE *fd;
 struct addrinfo *res;
 static void signal_handler ( int signal_number )
 {
@@ -29,7 +37,8 @@ int main(){
     struct sockaddr_in *addr_in;
     socklen_t addr_size;
     int listenfd, connfd;
-    
+    char ip6str[INET6_ADDRSTRLEN];
+
     memset(&hints,0,sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -59,8 +68,6 @@ int main(){
         freeaddrinfo(res);
         return -1;
     }
-
-    int bind(int sockfd, struct sockaddr *my_addr, int addrlen);
     if(bind(listenfd,res->ai_addr,res->ai_addrlen) < 0)
     {
         close(listenfd);
@@ -92,7 +99,6 @@ int main(){
     else if(client_addr.ss_family==AF_INET6){
         // Connection established with an IPv6 client
         addr_in6 = (struct sockaddr_in6 *)&client_addr;
-        char ip6str[INET6_ADDRSTRLEN];
         inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip6str, sizeof(ip6str));
         syslog(LOG_INFO, "Accepted connection from %s", ip6str);
     }
