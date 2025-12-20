@@ -102,9 +102,11 @@ int main(){
         inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip6str, sizeof(ip6str));
         syslog(LOG_INFO, "Accepted connection from %s", ip6str);
     }
-
+    syslog(LOG_DEBUG, "Debug: Connection accepted");
     while(1){
+        syslog(LOG_DEBUG, "Debug: Waiting for other clients...");
         do{
+            syslog(LOG_DEBUG, "Debug: Waiting for other data...");
             char buf[MAXDATASIZE],ret_fwrite,ret_fread;
             int numbytes = recv(connfd,buf,MAXDATASIZE-1,0);
             if(numbytes < 0){
@@ -145,7 +147,7 @@ int main(){
                 free(file_content);
             }
         }while(1);
-
+        
         close(connfd);
         if(client_addr.ss_family==AF_INET){
             syslog(LOG_INFO, "Closed connection from %s", inet_ntoa(addr_in->sin_addr));
