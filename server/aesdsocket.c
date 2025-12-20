@@ -122,7 +122,8 @@ int main(){
                 buf[numbytes] = '\0';
                 strcat(buf,"\n");
                 ret_fwrite = fwrite(buf,sizeof(char),numbytes,fd);
-                
+                syslog(LOG_DEBUG, "Debug: Data received: %s and %d", buf, strlen(buf));
+                syslog(LOG_DEBUG, "Debug: fwrite returned: %d", ret_fwrite);
                 if(ret_fwrite < strlen(buf)){
                     syslog(LOG_DEBUG, "Debug: fwrite failed");
                     close(listenfd);
