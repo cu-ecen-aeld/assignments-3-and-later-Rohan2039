@@ -60,6 +60,7 @@ int main(){
         return -1;
     }
     fd = fopen("/var/tmp/aesdsocketdata", "a+");
+    //journalctl | grep aesdsocket use this to check syslog messages
     openlog("aesdsocket", LOG_PID | LOG_CONS, LOG_USER);
 
     listenfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -110,10 +111,11 @@ int main(){
             char buf[MAXDATASIZE],ret_fwrite,ret_fread;
             int numbytes = recv(connfd,buf,MAXDATASIZE-1,0);
             if(numbytes < 0){
-
+                syslog(LOG_DEBUG, "Debug: recv failed");   
                 close(listenfd);
                 close(connfd);
                 freeaddrinfo(res);
+
                 return -1;
             }
             else if(numbytes > 0){
@@ -122,6 +124,7 @@ int main(){
                 ret_fwrite = fwrite(buf,sizeof(char),numbytes,fd);
                 
                 if(ret_fwrite < strlen(buf)){
+                    syslog(LOG_DEBUG, "Debug: fwrite failed");
                     close(listenfd);
                     close(connfd);
                     freeaddrinfo(res);
@@ -131,6 +134,7 @@ int main(){
                 long size = ftell(fd);
                 char *file_content = malloc(size + 1);
                 if(file_content == NULL){
+                    syslog(LOG_DEBUG, "Debug: malloc failed");
                     close(listenfd);
                     close(connfd);
                     freeaddrinfo(res);
@@ -139,6 +143,7 @@ int main(){
                 ret_fread = fread(file_content, sizeof(char), size, fd);
                 file_content[size] = '\0';
                 if(send(connfd,file_content,size,0) < 0){
+                    syslog(LOG_DEBUG, "Debug: send failed");
                     close(listenfd);
                     close(connfd);
                     freeaddrinfo(res);
