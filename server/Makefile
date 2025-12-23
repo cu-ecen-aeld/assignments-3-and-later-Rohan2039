@@ -1,7 +1,9 @@
 CC :=gcc
 all:aesdsocket.c
 	$(CC) -c aesdsocket.c -o aesdsocket.o
-	$(CC) aesdsocket.o -o aesdsocket
+	$(CC) -c signal.c -o signal.o
+
+	$(CC) aesdsocket.o signal.o -o aesdsocket
 
 clean:
 	rm -f aesdsocket *.o

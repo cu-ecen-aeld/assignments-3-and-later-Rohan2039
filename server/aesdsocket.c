@@ -1,170 +1,182 @@
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <syslog.h>
-#include <string.h>
-#include <stdio.h>
-#include <netdb.h> 
-#include <stdlib.h>
-#include <arpa/inet.h>
-#include <unistd.h>
+#include "aesdsocket.h"
+
 
 #define PORT "9000"
-#define MAXDATASIZE 100
+#define MAXDATASIZE 25000
 int listenfd;
-FILE *fd;
+FILE *fp;
 struct addrinfo *res;
-static void signal_handler ( int signal_number )
-{
+int listenfd, connfd;
+char ip6str[INET6_ADDRSTRLEN];
+
+typedef enum{
+    CL_LISTEN_FD,
+    CL_CONN_FD
+}close_fd;
+
+extern int siganl_init();
+
+void get_IP_ADDR_info(struct sockaddr_storage client_addr);
+int close_socket(close_fd close_fd_lcl, char *funcname);
+int send_client(int connfd, FILE *fp);
+void demonise_process();
+
+void get_IP_ADDR_info(struct sockaddr_storage client_addr){
     
-
-    if ( signal_number == SIGINT || signal_number == SIGTERM ) {
-        syslog(LOG_INFO, "Caught signal, exiting");
-        close(listenfd);
-        freeaddrinfo(res);
-        fclose(fd);
-        remove("/var/tmp/aesdsocketdata");
-        closelog();
+    if(client_addr.ss_family==AF_INET){
+        struct sockaddr_in *addr_in;
+        // Connection established with an IPv4 client
+        addr_in = (struct sockaddr_in *)&client_addr;
+        strcpy(ip6str, inet_ntoa(addr_in->sin_addr));
+        
     }
-
+    else if(client_addr.ss_family==AF_INET6){
+        struct sockaddr_in6 *addr_in6;
+        // Connection established with an IPv6 client
+        addr_in6 = (struct sockaddr_in6 *)&client_addr;
+        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip6str, sizeof(ip6str));
+        
+    }
 }
 
-int main(){
+int close_socket(close_fd close_fd_lcl, char *funcname){
+
+    perror(funcname);
+    if(close_fd_lcl == CL_LISTEN_FD){
+        close(listenfd);
+    }
+    else if(close_fd_lcl == CL_CONN_FD){
+        close(listenfd);
+        close(connfd);
+    }
+    freeaddrinfo(res);
+}
+
+int send_client(int connfd, FILE *fp){
+    
+    char line[25000];
+    fflush(fp);          
+    rewind(fp);
+    while(fgets(line,sizeof(line),fp)!=NULL)
+    {
+        if(send(connfd,line,strlen(line),0) < 0)
+        {
+            close_socket(CL_CONN_FD,"send");
+            return -1;
+        }
+    }
+}
+
+void demonise_process(){
+    pid_t pid = fork();
+
+    if(pid<0){
+        exit(EXIT_FAILURE);
+    }
+    else if(pid>0){
+        exit(EXIT_SUCCESS);
+    }
+    
+    if(setsid()<0){
+        exit(EXIT_FAILURE);
+    }
+
+    chdir("/");
+    umask(0);
+
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+}
+
+
+int main(int argc ,char *argv[]){
 
     struct addrinfo hints;
     struct sockaddr_storage client_addr;
-    struct sockaddr_in6 *addr_in6;
-    struct sockaddr_in *addr_in;
+    
     socklen_t addr_size;
-    int listenfd, connfd;
-    char ip6str[INET6_ADDRSTRLEN];
 
+    if(argc == 2 && strcmp(argv[1], "-d")==0){
+        printf("Demonising the process\n");
+        demonise_process();
+    }
+
+    siganl_init();
+    fp = fopen("/var/tmp/aesdsocketdata", "a+");
+    //journalctl | grep aesdsocket use this to check syslog messages
+    openlog("aesdsocket10", LOG_PID | LOG_CONS, LOG_USER);
+
+    //get the address information by calling getaddrinfo
     memset(&hints,0,sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-
-    struct sigaction new_action;
-    memset(&new_action,0,sizeof(struct sigaction));
-    new_action.sa_handler=signal_handler;
-
-    if( sigaction(SIGTERM, &new_action, NULL) != 0 ) {
-        return -1;
-    }
-    if( sigaction(SIGINT, &new_action, NULL) ) {
-        return -1;
-    }
-
     if(getaddrinfo(NULL,PORT, &hints, &res)!= 0)
     {
+        perror("getaddrinfo");
         return -1;
     }
-    fd = fopen("/var/tmp/aesdsocketdata", "a+");
-    //journalctl | grep aesdsocket use this to check syslog messages
-    openlog("aesdsocket", LOG_PID | LOG_CONS, LOG_USER);
-
+    
     listenfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if(listenfd < 0)
     {
-        freeaddrinfo(res);
+        close_socket(CL_LISTEN_FD,"socket");
         return -1;
     }
+
     if(bind(listenfd,res->ai_addr,res->ai_addrlen) < 0)
     {
-        close(listenfd);
-        freeaddrinfo(res);
+        close_socket(CL_LISTEN_FD,"bind");
         return -1;
     }
 
     if(listen(listenfd, 5) < 0)
     {
-        close(listenfd);
-        freeaddrinfo(res);
+        close_socket(CL_LISTEN_FD,"listen");
         return -1;
     }
 
     addr_size = sizeof(client_addr);
-    connfd = accept(listenfd, (struct sockaddr *)&client_addr, &addr_size);
-    if(connfd < 0)
-    {
-        close(listenfd);
-        freeaddrinfo(res);
-        return -1;
-    }
-
-    if(client_addr.ss_family==AF_INET){
-        // Connection established with an IPv4 client
-        addr_in = (struct sockaddr_in *)&client_addr;
-        syslog(LOG_INFO, "Accepted connection from %s", inet_ntoa(addr_in->sin_addr));
-    }
-    else if(client_addr.ss_family==AF_INET6){
-        // Connection established with an IPv6 client
-        addr_in6 = (struct sockaddr_in6 *)&client_addr;
-        inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip6str, sizeof(ip6str));
-        syslog(LOG_INFO, "Accepted connection from %s", ip6str);
-    }
-    syslog(LOG_DEBUG, "Debug: Connection accepted");
     while(1){
-        syslog(LOG_DEBUG, "Debug: Waiting for other clients...");
-        do{
-            syslog(LOG_DEBUG, "Debug: Waiting for other data...");
-            char buf[MAXDATASIZE],ret_fwrite,ret_fread;
-            int numbytes = recv(connfd,buf,MAXDATASIZE-1,0);
-            if(numbytes < 0){
-                syslog(LOG_DEBUG, "Debug: recv failed");   
-                close(listenfd);
-                close(connfd);
-                freeaddrinfo(res);
+	    connfd = accept(listenfd, (struct sockaddr *)&client_addr, &addr_size);
+        if(connfd < 0)
+        {
+            close_socket(CL_LISTEN_FD,"accept");
+            return -1;
+        }
 
+        get_IP_ADDR_info(client_addr);
+        syslog(LOG_INFO, "Accepted connection from %s", ip6str);
+    
+        char buf[MAXDATASIZE];
+        size_t ret_fwrite,ret_fread;
+        int numbytes;
+
+        while ((numbytes = recv(connfd, buf, sizeof(buf), 0)) > 0) {
+            syslog(LOG_INFO, "The string %s", buf);
+            fwrite(buf, 1, numbytes, fp);
+            fflush(fp);
+            if(numbytes == strlen(buf)-1){
+                close_socket(CL_CONN_FD,"fwrite");
                 return -1;
             }
-            else if(numbytes > 0){
-                buf[numbytes] = '\0';
-                strcat(buf,"\n");
-                ret_fwrite = fwrite(buf,sizeof(char),numbytes,fd);
-                syslog(LOG_DEBUG, "Debug: Data received: %s and %d", buf, strlen(buf));
-                syslog(LOG_DEBUG, "Debug: fwrite returned: %d", ret_fwrite);
-                if(ret_fwrite < strlen(buf)){
-                    syslog(LOG_DEBUG, "Debug: fwrite failed");
-                    close(listenfd);
-                    close(connfd);
-                    freeaddrinfo(res);
-                    return -1;
-                }
-                fseek(fd, 0, SEEK_END);
-                long size = ftell(fd);
-                char *file_content = malloc(size + 1);
-                if(file_content == NULL){
-                    syslog(LOG_DEBUG, "Debug: malloc failed");
-                    close(listenfd);
-                    close(connfd);
-                    freeaddrinfo(res);
-                    return -1;
-                }
-                ret_fread = fread(file_content, sizeof(char), size, fd);
-                file_content[size] = '\0';
-                if(send(connfd,file_content,size,0) < 0){
-                    syslog(LOG_DEBUG, "Debug: send failed");
-                    close(listenfd);
-                    close(connfd);
-                    freeaddrinfo(res);
-                    return -1;
-                }
-                free(file_content);
+            if(buf[numbytes-1]=='\n'){  
+                send_client(connfd,fp);
             }
-        }while(1);
+        }
+        /* normalize record boundary */
+        if(numbytes < 0){
+            close_socket(CL_CONN_FD,"recv");
+            return -1;
+        }
+
         
+        syslog(LOG_DEBUG,"Exitting.....");
         close(connfd);
-        if(client_addr.ss_family==AF_INET){
-            syslog(LOG_INFO, "Closed connection from %s", inet_ntoa(addr_in->sin_addr));
-        }
-        else if(client_addr.ss_family==AF_INET6){
 
-            inet_ntop(AF_INET6, &addr_in6->sin6_addr, ip6str, sizeof(ip6str));
-            syslog(LOG_INFO, "Closed connection from %s", ip6str);
-        }
+        syslog(LOG_INFO, "Closed connection from %s", ip6str);
+        syslog(LOG_DEBUG,"Listeing to other clients.......");
     }
-
-
     return 0;
 }
