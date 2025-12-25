@@ -1,4 +1,4 @@
-CC :=gcc
+CC :=aarch64-none-linux-gnu-gcc
 all:aesdsocket.c
 	$(CC) -c aesdsocket.c -o aesdsocket.o
 	$(CC) -c signal.c -o signal.o
